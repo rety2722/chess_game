@@ -125,6 +125,16 @@ class Main:
                         # create possible move
                         initial = Square(dragger.initial_row, dragger.initial_col)
                         final = Square(released_row, released_col)
+                        if initial == final:
+                            # show
+                            game.show_bg(screen)
+                            game.show_last_move(screen)
+                            game.show_moves(screen)
+                            game.show_pieces(screen)
+                            game.show_hover(screen)
+                            game.show_promotion(screen)
+                            dragger.undrag_piece()
+                            continue
                         move = Move(initial, final)
 
                         # valid move ?
@@ -132,6 +142,7 @@ class Main:
                             # normal capture
                             captured = board.squares[released_row][released_col].has_piece()
                             board.move(dragger.piece, move)
+                            game.moves.append(move)
 
                             board.set_true_en_passant(dragger.piece)
 

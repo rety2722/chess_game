@@ -17,6 +17,7 @@ class Game:
         self.dragger = Dragger()
         self.config = Config()
         self.promoting = False
+        self.moves = []
 
     # blit methods
 

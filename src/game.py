@@ -5,6 +5,7 @@ from board import Board
 from dragger import Dragger
 from config import Config
 from square import Square
+from piece import *
 
 
 class Game:
@@ -15,6 +16,8 @@ class Game:
         self.board = Board()
         self.dragger = Dragger()
         self.config = Config()
+        self.promoting = False
+        self.moves = []
 
     # blit methods
 
@@ -104,6 +107,28 @@ class Game:
             # blit
             pygame.draw.rect(surface, color, rect, width=3)
 
+    def show_promotion(self, surface):
+        if self.promoting:
+            theme = self.config.theme
+            final = self.board.last_move.final
+            squares = [(i, final.col) for i in range(4)] if final.row == 0 else [(i, final.col) for i in range(7, 3, -1)]
+            pieces = [
+                Queen(self.board.squares[final.row][final.col].piece.color),
+                Knight(self.board.squares[final.row][final.col].piece.color),
+                Rook(self.board.squares[final.row][final.col].piece.color),
+                Bishop(self.board.squares[final.row][final.col].piece.color)
+            ]
+            for square in squares:
+                color = theme.moves.light if (final.row + final.col) % 2 == 0 else theme.moves.dark
+                rect = (square[1] * SQSIZE, square[0] * SQSIZE, SQSIZE, SQSIZE)
+                pygame.draw.rect(surface, color, rect)
+            for i in range(4):
+                piece = pieces[i]
+                piece.set_texture()
+                img = pygame.image.load(piece.texture)
+                piece_center = squares[i][1] * SQSIZE + SQSIZE // 2, squares[i][0] * SQSIZE + SQSIZE // 2
+                piece.texture_square = img.get_rect(center=piece_center)
+                surface.blit(img, piece.texture_square)
     # other methods
 
     def next_turn(self):

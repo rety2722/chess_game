@@ -10,17 +10,27 @@ import os
 class Board:
 
     def __init__(self):
-        self.squares = [[0, 0, 0, 0, 0, 0, 0, 0] for col in range(COLS)]
+        self.squares = [[Square(row, col) for col in range(COLS)] for row in range(ROWS)]
         self.last_move = None
         self._create()
         self._add_pieces('white')
         self._add_pieces('black')
 
     def move(self, piece, move, testing=False):
+
+        changed_squares = []
+
+        # shown move
+        shown_moves = []
+
         initial = move.initial
         final = move.final
 
         en_passant_empty = self.squares[final.row][final.col].is_empty()
+
+        # write changed squares
+        changed_squares.append(copy.deepcopy(self.squares[initial.row][initial.col]))
+        changed_squares.append(copy.deepcopy(self.squares[final.row][final.col]))
 
         # console board move update
         self.squares[initial.row][initial.col].piece = None
@@ -30,23 +40,28 @@ class Board:
             # en passant capture
             diff = final.col - initial.col
             if diff != 0 and en_passant_empty:
+                # write changed squares
+                if not testing:
+                    changed_squares.append(copy.deepcopy(self.squares[initial.row][initial.col + diff]))
                 # console board move update
                 self.squares[initial.row][initial.col + diff].piece = None
                 self.squares[final.row][final.col].piece = piece
                 if not testing:
+
                     sound = Sound(
                         os.path.join('../assets/sounds/capture.wav'))
                     sound.play()
-
-            # # pawn promotion
-            # else:
-            #     self.check_promotion(piece, final)
 
         # king castling
         if isinstance(piece, King):
             if self.castling(initial, final) and not testing:
                 diff = final.col - initial.col
                 rook = piece.left_rook if (diff < 0) else piece.right_rook
+                # write changed squares
+                c = 0 if diff < 0 else 7
+                changed_squares.append(copy.deepcopy(self.squares[initial.row][c]))
+                changed_squares.append(copy.deepcopy(self.squares[initial.row][final.col - abs(diff) // diff]))
+
                 self.move(rook, rook.moves[-1])
 
         # move
@@ -57,6 +72,12 @@ class Board:
 
         # set last move
         self.last_move = move
+
+        return changed_squares
+
+    def undo_move(self, fields):
+        for field in fields:
+            self.squares[field.row][field.col].piece = field.piece
 
     def valid_move(self, piece, move):
         return move in piece.moves

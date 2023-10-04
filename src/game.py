@@ -1,4 +1,5 @@
 import pygame
+import string
 
 from const import *
 from board import Board
@@ -18,16 +19,27 @@ class Game:
         self.config = Config()
         self.promoting = False
         self.moves = []
+        self.changed_squares = []
 
     # blit methods
+    def show_all(self, surface, show_hover=True, show_moves=True, show_promotion=True):
+        self.show_background(surface)
+        self.show_last_move(surface)
+        if show_moves:
+            self.show_moves(surface)
+        self.show_pieces(surface)
+        if show_hover:
+            self.show_hover(surface)
+        if show_promotion:
+            self.show_promotion(surface)
 
-    def show_bg(self, surface):
+    def show_background(self, surface):
         theme = self.config.theme
 
         for row in range(ROWS):
             for col in range(COLS):
                 # color
-                color = theme.bg.light if (row + col) % 2 == 0 else theme.bg.dark
+                color = theme.background.light if (row + col) % 2 == 0 else theme.background.dark
                 # rect
                 rect = (col * SQSIZE, row * SQSIZE, SQSIZE, SQSIZE)
                 # blit
@@ -36,7 +48,7 @@ class Game:
                 # row coordinates
                 if col == 0:
                     # color
-                    color = theme.bg.dark if row % 2 == 0 else theme.bg.light
+                    color = theme.background.dark if row % 2 == 0 else theme.background.light
                     # label
                     lbl = self.config.font.render(str(ROWS - row), 1, color)
                     lbl_pos = (5, 5 + row * SQSIZE)
@@ -46,7 +58,7 @@ class Game:
                 # col coordinates
                 if row == 7:
                     # color
-                    color = theme.bg.dark if (row + col) % 2 == 0 else theme.bg.light
+                    color = theme.background.dark if (row + col) % 2 == 0 else theme.background.light
                     # label
                     lbl = self.config.font.render(Square.get_alphacol(col), 1, color)
                     lbl_pos = (col * SQSIZE + SQSIZE - 20, HEIGHT - 20)
@@ -111,7 +123,8 @@ class Game:
         if self.promoting:
             theme = self.config.theme
             final = self.board.last_move.final
-            squares = [(i, final.col) for i in range(4)] if final.row == 0 else [(i, final.col) for i in range(7, 3, -1)]
+            squares = [(i, final.col) for i in range(4)] if final.row == 0 else [(i, final.col) for i in
+                                                                                 range(7, 3, -1)]
             pieces = [
                 Queen(self.board.squares[final.row][final.col].piece.color),
                 Knight(self.board.squares[final.row][final.col].piece.color),
@@ -129,6 +142,7 @@ class Game:
                 piece_center = squares[i][1] * SQSIZE + SQSIZE // 2, squares[i][0] * SQSIZE + SQSIZE // 2
                 piece.texture_square = img.get_rect(center=piece_center)
                 surface.blit(img, piece.texture_square)
+
     # other methods
 
     def next_turn(self):

@@ -16,6 +16,44 @@ class Main:
         pygame.display.set_caption('Chess')
         self.game = Game()
 
+    def promote(self):
+
+        screen = self.screen
+        game = self.game
+        board = self.game.board
+        dragger = self.game.dragger
+
+        run = True
+        while run:
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if e.type == pygame.MOUSEBUTTONDOWN:
+                    dragger.update_mouse(e.pos)
+
+                    clicked_row = max(min(HEIGHT - 1, dragger.mouseY), 0) // SQSIZE
+                    clicked_col = max(min(WIDTH - 1, dragger.mouseX), 0) // SQSIZE
+
+                    final = board.last_move.final
+                    squares = [(i, final.col) for i in range(4)] if final.row == 0 else [(i, final.col) for i in
+                                                                                         range(7, 3, -1)]
+                    pieces = [
+                        Queen(board.squares[final.row][final.col].piece.color),
+                        Knight(board.squares[final.row][final.col].piece.color),
+                        Rook(board.squares[final.row][final.col].piece.color),
+                        Bishop(board.squares[final.row][final.col].piece.color)
+                    ]
+                    for i in range(4):
+                        if squares[i] == (clicked_row, clicked_col):
+                            # assign a piece
+                            board.squares[final.row][final.col].piece = pieces[i]
+                            # exit promoting
+                            run = False
+                            game.promoting = False
+                            # show
+                            game.show_all(screen)
+
     def mainloop(self):
 
         screen = self.screen
@@ -25,48 +63,10 @@ class Main:
 
         while True:
             # show methods
-            game.show_bg(screen)
-            game.show_last_move(screen)
-            game.show_moves(screen)
-            game.show_pieces(screen)
-            game.show_hover(screen)
+            game.show_all(screen, show_promotion=False)
             if game.promoting:
                 game.show_promotion(screen)
-                run = True
-                while run:
-                    for e in pygame.event.get():
-                        if e.type == pygame.QUIT:
-                            pygame.quit()
-                            sys.exit()
-                        if e.type == pygame.MOUSEBUTTONDOWN:
-                            dragger.update_mouse(e.pos)
-
-                            clicked_row = max(min(HEIGHT - 1, dragger.mouseY), 0) // SQSIZE
-                            clicked_col = max(min(WIDTH - 1, dragger.mouseX), 0) // SQSIZE
-
-                            final = board.last_move.final
-                            squares = [(i, final.col) for i in range(4)] if final.row == 0 else [(i, final.col) for i in
-                                                                                                 range(7, 3, -1)]
-                            pieces = [
-                                Queen(board.squares[final.row][final.col].piece.color),
-                                Knight(board.squares[final.row][final.col].piece.color),
-                                Rook(board.squares[final.row][final.col].piece.color),
-                                Bishop(board.squares[final.row][final.col].piece.color)
-                            ]
-                            for i in range(4):
-                                if squares[i] == (clicked_row, clicked_col):
-                                    # assign a piece
-                                    board.squares[final.row][final.col].piece = pieces[i]
-                                    # exit promoting
-                                    run = False
-                                    game.promoting = False
-                                    # show
-                                    game.show_bg(screen)
-                                    game.show_last_move(screen)
-                                    game.show_moves(screen)
-                                    game.show_pieces(screen)
-                                    game.show_hover(screen)
-                                    game.show_promotion(screen)
+                self.promote()
 
             if dragger.dragging:
                 dragger.update_blit(screen)
@@ -89,11 +89,7 @@ class Main:
                             dragger.save_initial(event.pos)
                             dragger.drag_piece(piece)
                             # show methods 
-                            game.show_bg(screen)
-                            game.show_last_move(screen)
-                            game.show_moves(screen)
-                            game.show_pieces(screen)
-                            game.show_promotion(screen)
+                            game.show_all(screen, show_hover=False)
 
                 # mouse motion
                 elif event.type == pygame.MOUSEMOTION:
@@ -105,12 +101,7 @@ class Main:
                     if dragger.dragging:
                         dragger.update_mouse(event.pos)
                         # show methods
-                        game.show_bg(screen)
-                        game.show_last_move(screen)
-                        game.show_moves(screen)
-                        game.show_pieces(screen)
-                        game.show_hover(screen)
-                        game.show_promotion(screen)
+                        game.show_all(screen)
                         dragger.update_blit(screen)
 
                 # click release
@@ -120,19 +111,14 @@ class Main:
                         dragger.update_mouse(event.pos)
 
                         released_row = min(WIDTH - 1, max(0, dragger.mouseY)) // SQSIZE
-                        released_col = min(WIDTH - 1, max(0, dragger.mouseX)) // SQSIZE
+                        released_col = min(HEIGHT - 1, max(0, dragger.mouseX)) // SQSIZE
 
                         # create possible move
                         initial = Square(dragger.initial_row, dragger.initial_col)
                         final = Square(released_row, released_col)
                         if initial == final:
                             # show
-                            game.show_bg(screen)
-                            game.show_last_move(screen)
-                            game.show_moves(screen)
-                            game.show_pieces(screen)
-                            game.show_hover(screen)
-                            game.show_promotion(screen)
+                            game.show_all(screen)
                             dragger.undrag_piece()
                             continue
                         move = Move(initial, final)
@@ -141,7 +127,8 @@ class Main:
                         if board.valid_move(dragger.piece, move):
                             # normal capture
                             captured = board.squares[released_row][released_col].has_piece()
-                            board.move(dragger.piece, move)
+                            changed_squares = board.move(dragger.piece, move)
+                            game.changed_squares.append(changed_squares)
                             game.moves.append(move)
 
                             board.set_true_en_passant(dragger.piece)
@@ -152,10 +139,7 @@ class Main:
                             # sounds
                             game.play_sound(captured)
                             # show methods
-                            game.show_bg(screen)
-                            game.show_last_move(screen)
-                            game.show_pieces(screen)
-                            game.show_promotion(screen)
+                            game.show_all(screen, show_moves=False, show_hover=False)
                             # next turn
                             game.next_turn()
 
@@ -163,6 +147,14 @@ class Main:
 
                 # key press
                 elif event.type == pygame.KEYDOWN:
+
+                    # unmoving
+                    if event.key == pygame.K_z:
+                        if len(game.moves) > 0:
+                            board.undo_move(game.changed_squares.pop(-1))
+                            game.moves.pop(-1)
+                            game.show_all(screen, show_hover=False, show_moves=False)
+                            game.next_turn()
 
                     # changing themes
                     if event.key == pygame.K_t:

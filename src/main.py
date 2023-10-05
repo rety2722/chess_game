@@ -111,7 +111,7 @@ class Main:
                         dragger.update_mouse(event.pos)
 
                         released_row = min(WIDTH - 1, max(0, dragger.mouseY)) // SQSIZE
-                        released_col = min(WIDTH - 1, max(0, dragger.mouseX)) // SQSIZE
+                        released_col = min(HEIGHT - 1, max(0, dragger.mouseX)) // SQSIZE
 
                         # create possible move
                         initial = Square(dragger.initial_row, dragger.initial_col)

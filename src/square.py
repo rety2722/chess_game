@@ -14,7 +14,7 @@ class Square:
         return self.piece is not None
 
     def is_empty(self):
-        return not self.has_piece()
+        return self.piece is None
 
     def has_team_piece(self, color):
         return self.has_piece() and self.piece.color == color

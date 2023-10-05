@@ -68,7 +68,7 @@ class Board:
         piece.moved = True
 
         # clear valid moves
-        piece.clear_moves()
+        self.clear_moves()
 
         # set last move
         self.last_move = move
@@ -118,6 +118,12 @@ class Board:
                             return True
 
         return False
+
+    def clear_moves(self):
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece():
+                    self.squares[row][col].piece.clear_moves()
 
     def calc_moves(self, piece, row, col, check=True):
         '''

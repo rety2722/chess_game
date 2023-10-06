@@ -20,6 +20,9 @@ class Game:
         self.promoting = False
         self.moves = []
         self.changed_squares = []
+        # necessary for not recalculating moves
+        self.clicked_square = Square(0, 0)
+        self.released_square = Square(7, 7)
 
     # blit methods
     def show_all(self, surface, show_hover=True, show_moves=True, show_promotion=True):

@@ -16,6 +16,7 @@ class Main:
         pygame.display.set_caption('Chess')
         self.game = Game()
 
+    # shows promotion options, collects a choice and promotes
     def promote(self):
 
         screen = self.screen
@@ -80,12 +81,16 @@ class Main:
                     clicked_row = min(HEIGHT - 1, max(0, dragger.mouseY)) // SQSIZE
                     clicked_col = min(WIDTH - 1, max(0, dragger.mouseX)) // SQSIZE
 
+                    # saves clicked square
+                    game.clicked_square = Square(clicked_row, clicked_col)
+
                     # if clicked square has a piece ?
                     if board.squares[clicked_row][clicked_col].has_piece():
                         piece = board.squares[clicked_row][clicked_col].piece
                         # valid piece (color) ?
                         if piece.color == game.next_player:
-                            board.calc_moves(piece, clicked_row, clicked_col, check=True)
+                            if game.released_square != game.clicked_square:
+                                board.calc_moves(piece, clicked_row, clicked_col, check=True)
                             dragger.save_initial(event.pos)
                             dragger.drag_piece(piece)
                             # show methods 
@@ -112,6 +117,9 @@ class Main:
 
                         released_row = min(WIDTH - 1, max(0, dragger.mouseY)) // SQSIZE
                         released_col = min(HEIGHT - 1, max(0, dragger.mouseX)) // SQSIZE
+
+                        # saves released square
+                        game.released_square = Square(released_row, released_col)
 
                         # create possible move
                         initial = Square(dragger.initial_row, dragger.initial_col)

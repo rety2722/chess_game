@@ -55,6 +55,125 @@ class Main:
                             # show
                             game.show_all(screen)
 
+    # human play methods
+
+    # registers player's click
+    def player_click(self, event: pygame.event.Event):
+        # variables' initialisation
+        screen = self.screen
+        game = self.game
+        board = self.game.board
+        dragger = self.game.dragger
+
+        # click main code
+        dragger.update_mouse(event.pos)
+
+        # saves position of a click
+        clicked_row = min(HEIGHT - 1, max(0, dragger.mouseY)) // SQSIZE
+        clicked_col = min(WIDTH - 1, max(0, dragger.mouseX)) // SQSIZE
+
+        # saves clicked square
+        game.clicked_square = Square(clicked_row, clicked_col)
+
+        # if clicked square has a piece ?
+        if board.squares[clicked_row][clicked_col].has_piece():
+            piece = board.squares[clicked_row][clicked_col].piece
+            # valid piece (color) ?
+            if piece.color == game.next_player:
+                if game.released_square != game.clicked_square:
+                    board.calc_moves(piece, clicked_row, clicked_col, check=True)
+                dragger.save_initial(event.pos)
+                dragger.drag_piece(piece)
+                # show methods
+                game.show_all(screen, show_hover=False)
+
+    # registers player's dragging piece
+    def player_drag(self, event: pygame.event.Event):
+        # variables' initialisation
+        screen = self.screen
+        game = self.game
+        board = self.game.board
+        dragger = self.game.dragger
+
+        # dragging main code
+        # tracks current position
+        motion_row = max(0, min(HEIGHT - 1, event.pos[1])) // SQSIZE
+        motion_col = max(0, min(WIDTH - 1, event.pos[0])) // SQSIZE
+
+        # puts hover onto it
+        game.set_hover(motion_row, motion_col)
+
+        # updates everything
+        if dragger.dragging:
+            dragger.update_mouse(event.pos)
+            # show methods
+            game.show_all(screen)
+            dragger.update_blit(screen)
+
+    # registers if dragged piece is released
+    def player_release(self, event: pygame.event.Event):
+        screen = self.screen
+        game = self.game
+        board = self.game.board
+        dragger = self.game.dragger
+
+        if dragger.dragging:
+            dragger.update_mouse(event.pos)
+
+            released_row = min(WIDTH - 1, max(0, dragger.mouseY)) // SQSIZE
+            released_col = min(HEIGHT - 1, max(0, dragger.mouseX)) // SQSIZE
+
+            # saves released square
+            game.released_square = Square(released_row, released_col)
+
+            # create possible move
+            initial = Square(dragger.initial_row, dragger.initial_col)
+            final = Square(released_row, released_col)
+            # if move wasn't done to avoid clicking to much
+            if initial == final:
+                # show
+                game.show_all(screen)
+                dragger.undrag_piece()
+                # if click is in the same position no need to re-calculate moves
+                return
+            move = Move(initial, final)
+
+            # valid move ?
+            if board.valid_move(dragger.piece, move):
+                # normal capture
+                captured = board.squares[released_row][released_col].has_piece()
+                changed_squares = board.move(dragger.piece, move)
+                game.changed_squares.append(changed_squares)
+                game.moves.append(move)
+
+                board.set_true_en_passant(dragger.piece)
+
+                if board.check_promotion(dragger.piece, final):
+                    game.promoting = True
+
+                # checkmate and stalemate
+                if not board.moves_left(game.next_player):
+                    game.next_turn()
+                    if board.king_checked(game.next_player):
+                        game.checkmate = True
+                        print('checkmate')
+                    else:
+                        game.stalemate = True
+                        print('stalemate')
+                    game.next_turn()
+                else:
+                    game.checkmate = False
+                    game.stalemate = False
+
+                # sounds
+                game.play_sound(captured)
+                # show methods
+                game.show_all(screen, show_moves=False, show_hover=False)
+                # next turn
+                game.next_turn()
+
+        dragger.undrag_piece()
+
     def mainloop(self):
 
         screen = self.screen
@@ -68,12 +187,15 @@ class Main:
 
             # shows a message if checkmate on the board
             if game.checkmate:
+
                 last_square = board.last_move.final
                 color = board.squares[last_square.row][last_square.col].piece.color
                 text = color + ' wins by checkmate. Press r to restart'
                 game.show_text(screen, text)
+
             # shows a message if stalemate on the board
             elif game.stalemate:
+
                 text = 'game ended with stalemate. Press r to restart'
                 game.show_text(screen, text)
 
@@ -90,108 +212,27 @@ class Main:
                 # click
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # no need to collect moves data if the game is ended
-                    if not (game.checkmate or game.stalemate):
-                        dragger.update_mouse(event.pos)
-
-                        clicked_row = min(HEIGHT - 1, max(0, dragger.mouseY)) // SQSIZE
-                        clicked_col = min(WIDTH - 1, max(0, dragger.mouseX)) // SQSIZE
-
-                        # saves clicked square
-                        game.clicked_square = Square(clicked_row, clicked_col)
-
-                        # if clicked square has a piece ?
-                        if board.squares[clicked_row][clicked_col].has_piece():
-                            piece = board.squares[clicked_row][clicked_col].piece
-                            # valid piece (color) ?
-                            if piece.color == game.next_player:
-                                if game.released_square != game.clicked_square:
-                                    board.calc_moves(piece, clicked_row, clicked_col, check=True)
-                                dragger.save_initial(event.pos)
-                                dragger.drag_piece(piece)
-                                # show methods
-                                game.show_all(screen, show_hover=False)
+                    if not game.game_over:
+                        self.player_click(event)
 
                 # mouse motion
                 elif event.type == pygame.MOUSEMOTION:
                     # no need to collect moves data if the game is ended
-                    if not (game.checkmate or game.stalemate):
-                        motion_row = max(0, min(HEIGHT - 1, event.pos[1])) // SQSIZE
-                        motion_col = max(0, min(WIDTH - 1, event.pos[0])) // SQSIZE
-
-                        game.set_hover(motion_row, motion_col)
-
-                        if dragger.dragging:
-                            dragger.update_mouse(event.pos)
-                            # show methods
-                            game.show_all(screen)
-                            dragger.update_blit(screen)
+                    if not game.game_over:
+                        self.player_drag(event)
 
                 # click release
                 elif event.type == pygame.MOUSEBUTTONUP:
                     # no need to collect moves data if the game is ended
-                    if not (game.checkmate or game.stalemate):
-
-                        if dragger.dragging:
-                            dragger.update_mouse(event.pos)
-
-                            released_row = min(WIDTH - 1, max(0, dragger.mouseY)) // SQSIZE
-                            released_col = min(HEIGHT - 1, max(0, dragger.mouseX)) // SQSIZE
-
-                            # saves released square
-                            game.released_square = Square(released_row, released_col)
-
-                            # create possible move
-                            initial = Square(dragger.initial_row, dragger.initial_col)
-                            final = Square(released_row, released_col)
-                            if initial == final:
-                                # show
-                                game.show_all(screen)
-                                dragger.undrag_piece()
-                                continue
-                            move = Move(initial, final)
-
-                            # valid move ?
-                            if board.valid_move(dragger.piece, move):
-                                # normal capture
-                                captured = board.squares[released_row][released_col].has_piece()
-                                changed_squares = board.move(dragger.piece, move)
-                                game.changed_squares.append(changed_squares)
-                                game.moves.append(move)
-
-                                board.set_true_en_passant(dragger.piece)
-
-                                if board.check_promotion(dragger.piece, final):
-                                    game.promoting = True
-
-                                # checkmate and stalemate
-                                if not board.moves_left(game.next_player):
-                                    game.next_turn()
-                                    if board.king_checked(game.next_player):
-                                        game.checkmate = True
-                                        print('checkmate')
-                                    else:
-                                        game.stalemate = True
-                                        print('stalemate')
-                                    game.next_turn()
-                                else:
-                                    game.checkmate = False
-                                    game.stalemate = False
-
-                                # sounds
-                                game.play_sound(captured)
-                                # show methods
-                                game.show_all(screen, show_moves=False, show_hover=False)
-                                # next turn
-                                game.next_turn()
-
-                        dragger.undrag_piece()
+                    if not game.game_over:
+                        self.player_release(event)
 
                 # key press
                 elif event.type == pygame.KEYDOWN:
 
                     # unmoving
                     if event.key == pygame.K_z:
-                        if len(game.moves) > 0:
+                        if len(game.moves) > 0 and not dragger.dragging:
                             # if move undone, no checkmate or stalemate
                             game.checkmate = False
                             game.stalemate = False
@@ -207,12 +248,13 @@ class Main:
                     if event.key == pygame.K_t:
                         game.change_theme()
 
-                    # changing themes
+                    # resets the game
                     if event.key == pygame.K_r:
-                        game.reset()
-                        game = self.game
-                        board = self.game.board
-                        dragger = self.game.dragger
+                        if not dragger.dragging:
+                            game.reset()
+                            game = self.game
+                            board = self.game.board
+                            dragger = self.game.dragger
 
                 # quit application
                 elif event.type == pygame.QUIT:

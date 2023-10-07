@@ -26,6 +26,8 @@ class Game:
         # end of game
         self.checkmate = False
         self.stalemate = False
+        # game over variable for clarity
+        self.game_over = self.checkmate or self.stalemate
 
     # blit methods
     def show_all(self, surface, show_hover=True, show_moves=True, show_promotion=True):

@@ -101,6 +101,17 @@ class Game:
                 # blit
                 pygame.draw.rect(surface, color, rect)
 
+    # shows some text in the center of a screen
+    def show_text(self, surface, text):
+        # creates font
+        font = pygame.font.SysFont('Times New Roman', 40, True, False)
+        # creates text object and its location
+        text_object = font.render(text, 0, pygame.Color('Purple'))
+        text_location = text_object.get_rect()
+        text_location.center = (WIDTH // 2, HEIGHT // 2)
+        # draws text
+        surface.blit(text_object, text_location)
+
     def show_last_move(self, surface):
         theme = self.config.theme
 

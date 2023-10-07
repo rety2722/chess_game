@@ -23,6 +23,9 @@ class Game:
         # necessary for not recalculating moves
         self.clicked_square = Square(0, 0)
         self.released_square = Square(7, 7)
+        # end of game
+        self.checkmate = False
+        self.stalemate = False
 
     # blit methods
     def show_all(self, surface, show_hover=True, show_moves=True, show_promotion=True):

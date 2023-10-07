@@ -89,6 +89,18 @@ class Board:
                 return True
         return False
 
+    def moves_left(self, color):
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_enemy_piece(color):
+                    p = self.squares[row][col].piece
+                    self.calc_moves(p, row, col, check=True)
+                    if len(p.moves) > 0:
+                        return True
+                    p.clear_moves()
+        return False
+
+
     # checks if castling is valid in self.move()
     def valid_castling(self, king_move: Move, piece: Piece):
         row = king_move.initial.row
@@ -130,6 +142,20 @@ class Board:
                         if isinstance(m.final.piece, King):
                             return True
 
+        return False
+
+    # checks if king is checked for mate or stalemate
+    def king_checked(self, color):
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_enemy_piece(color):
+                    p = self.squares[row][col].piece
+                    self.calc_moves(p, row, col, check=False)
+                    for m in p.moves:
+                        if isinstance(m.final.piece, King):
+                            p.clear_moves()
+                            return True
+                    p.clear_moves()
         return False
 
     # checks whether the square is attacked, needed for checking castling validity

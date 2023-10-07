@@ -144,6 +144,20 @@ class Main:
                             if board.check_promotion(dragger.piece, final):
                                 game.promoting = True
 
+                            # checkmate and stalemate
+                            if not board.moves_left(game.next_player):
+                                game.next_turn()
+                                if board.king_checked(game.next_player):
+                                    game.checkmate = True
+                                    print('checkmate')
+                                else:
+                                    game.stalemate = True
+                                    print('stalemate')
+                                game.next_turn()
+                            else:
+                                game.checkmate = False
+                                game.stalemate = False
+
                             # sounds
                             game.play_sound(captured)
                             # show methods

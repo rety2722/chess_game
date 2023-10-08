@@ -20,6 +20,7 @@ class Game:
         self.dragger = Dragger()
         self.config = Config()
         self.promoting = False
+        # for keeping move log and for undoing moves
         self.moves = []
         self.changed_squares = []
         # necessary for not recalculating moves
@@ -29,9 +30,9 @@ class Game:
         self.checkmate = False
         self.stalemate = False
         # game over variable for clarity
-        self.game_over = self.checkmate or self.stalemate
+        self.game_over = False
         # game mode (PvP/PvE/CompVsComp)
-        self.player = {'white': True, 'black': True}
+        self.player = {'white': True, 'black': False}
 
     # blit methods
     def show_all(self, surface, show_hover=True, show_moves=True, show_promotion=True):

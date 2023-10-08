@@ -1,3 +1,5 @@
+import time
+
 import pygame
 import sys
 
@@ -6,7 +8,6 @@ from game import Game
 from square import Square
 from move import Move
 from piece import *
-from ai_chess import AI_engine
 
 
 class Main:
@@ -157,15 +158,15 @@ class Main:
                     game.game_over = True
                     game.next_turn()
                     if board.king_checked(game.next_player):
-                        game.checkmate = True
+                        board.checkmate = True
                         print('checkmate')
                     else:
-                        game.stalemate = True
+                        board.stalemate = True
                         print('stalemate')
                     game.next_turn()
                 else:
-                    game.checkmate = False
-                    game.stalemate = False
+                    board.checkmate = False
+                    board.stalemate = False
 
                 # sounds
                 game.play_sound(captured)
@@ -175,6 +176,69 @@ class Main:
                 game.next_turn()
 
         dragger.undrag_piece()
+        '''
+        When a stops being dragged, it is still not shown, so we have to show everything again
+        '''
+        # show methods
+        game.show_all(screen)
+
+    # makes a move for AI
+    def make_ai_move(self):
+        # initialize everything necessary
+        screen = self.screen
+        game = self.game
+        board = self.game.board
+        ai_engine = self.game.ai_engine
+
+        # calculates valid moves for engine
+        ai_engine.get_valid_moves(board, game.next_player)
+
+        # gets best move, which is now just a random move
+        player_coefficient = 1 if game.next_player == 'white' else -1
+        move = ai_engine.get_best_move(board, player_coefficient)
+
+        # save move info
+        initial = move.initial
+        final = move.final
+        piece = board.squares[initial.row][initial.col].piece
+
+        # normal capture
+        captured = board.squares[final.row][final.col].has_piece()
+
+        # move piece
+        changed_squares = board.move(piece, move, testing=False)
+
+        # clear engine moves
+        ai_engine.clear()
+
+        # change move log
+        game.changed_squares.append(changed_squares)
+        game.moves.append(move)
+
+        board.set_true_en_passant(piece)
+
+        if board.check_promotion(piece, final):
+            board.squares[final.row][final.col] = Queen(piece.color)
+
+        # checkmate and stalemate
+        if not board.moves_left(game.next_player):
+            game.game_over = True
+            game.next_turn()
+            if board.king_checked(game.next_player):
+                board.checkmate = True
+            else:
+                board.stalemate = True
+            game.next_turn()
+        else:
+            board.checkmate = False
+            board.stalemate = False
+
+        # sounds
+        game.play_sound(captured)
+        # show methods
+        game.show_all(screen, show_moves=False, show_hover=False)
+        # next turn
+        game.next_turn()
 
     def mainloop(self):
 
@@ -189,7 +253,7 @@ class Main:
             game.show_all(screen, show_promotion=False)
 
             # shows a message if checkmate on the board
-            if game.checkmate:
+            if board.checkmate:
 
                 last_square = board.last_move.final
                 color = board.squares[last_square.row][last_square.col].piece.color
@@ -197,7 +261,7 @@ class Main:
                 game.show_text(screen, text)
 
             # shows a message if stalemate on the board
-            elif game.stalemate:
+            elif board.stalemate:
 
                 text = 'game ended with stalemate. Press r to restart'
                 game.show_text(screen, text)
@@ -210,6 +274,11 @@ class Main:
             if dragger.dragging:
                 dragger.update_blit(screen)
 
+            # makes AI move if it's AI's turn
+            if not game.game_over:
+                if not game.player[game.next_player]:
+                    self.make_ai_move()
+
             for event in pygame.event.get():
 
                 # click
@@ -219,50 +288,6 @@ class Main:
                         # if player has to make a move
                         if game.player[game.next_player]:
                             self.player_click(event)
-                        else:
-
-                            # calculates valid moves for engine
-                            ai_engine.get_valid_moves(board, game.next_player)
-
-                            # gets best move, which is now just a random move
-                            move = ai_engine.get_best_move()
-                            initial = move.initial
-                            final = move.final
-                            piece = board.squares[initial.row][initial.col].piece
-                            # normal capture
-                            captured = board.squares[final.row][final.col].has_piece()
-                            # move piece
-                            changed_squares = board.move(piece, move, testing=False)
-                            # clear engine moves
-                            ai_engine.clear()
-                            # change move log
-                            game.changed_squares.append(changed_squares)
-                            game.moves.append(move)
-
-                            board.set_true_en_passant(piece)
-
-                            if board.check_promotion(piece, final):
-                                board.squares[final.row][final.col] = Queen(piece.color)
-
-                            # checkmate and stalemate
-                            if not board.moves_left(game.next_player):
-                                game.game_over = True
-                                game.next_turn()
-                                if board.king_checked(game.next_player):
-                                    game.checkmate = True
-                                else:
-                                    game.stalemate = True
-                                game.next_turn()
-                            else:
-                                game.checkmate = False
-                                game.stalemate = False
-
-                            # sounds
-                            game.play_sound(captured)
-                            # show methods
-                            game.show_all(screen, show_moves=False, show_hover=False)
-                            # next turn
-                            game.next_turn()
 
                 # mouse motion
                 elif event.type == pygame.MOUSEMOTION:
@@ -287,8 +312,8 @@ class Main:
                     if event.key == pygame.K_z:
                         if len(game.moves) > 0 and not dragger.dragging:
                             # if move undone, no checkmate or stalemate
-                            game.checkmate = False
-                            game.stalemate = False
+                            board.checkmate = False
+                            board.stalemate = False
                             # undoes move and removes last move from move log
                             board.undo_move(game.changed_squares.pop(-1))
                             game.moves.pop(-1)
@@ -304,8 +329,14 @@ class Main:
                     # resets the game
                     elif event.key == pygame.K_r:
                         if not dragger.dragging:
+                            # save a theme
+                            theme = game.config.theme
+                            # reset game
                             game.reset()
                             game = self.game
+                            # add last theme back
+                            game.config.theme = theme
+                            # re-initialize everything
                             board = self.game.board
                             dragger = self.game.dragger
 

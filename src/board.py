@@ -10,6 +10,10 @@ import os
 class Board:
 
     def __init__(self):
+        # checkmate and stalemate
+        self.checkmate = False
+        self.stalemate = False
+
         self.squares = [[Square(row, col) for col in range(COLS)] for row in range(ROWS)]
         self.last_move = None
         self._create()
@@ -476,6 +480,15 @@ class Board:
 
         elif isinstance(piece, King):
             king_moves()
+
+    def count_score(self) -> int:
+        score = 0
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece():
+                    piece = self.squares[row][col].piece
+                    score += piece.value
+        return score
 
     # creates a board
     def _create(self):

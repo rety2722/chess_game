@@ -33,7 +33,7 @@ class Board:
         # console board move update
         self.squares[initial.row][initial.col].piece = None
         self.squares[final.row][final.col].piece = piece
-        
+
         # making en-passant move if possible
         if isinstance(piece, Pawn):
             # en passant capture
@@ -99,7 +99,6 @@ class Board:
                         return True
                     p.clear_moves()
         return False
-
 
     # checks if castling is valid in self.move()
     def valid_castling(self, king_move: Move, piece: Piece):

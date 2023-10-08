@@ -6,6 +6,7 @@ from game import Game
 from square import Square
 from move import Move
 from piece import *
+from ai_chess import AI_engine
 
 
 class Main:
@@ -153,6 +154,7 @@ class Main:
 
                 # checkmate and stalemate
                 if not board.moves_left(game.next_player):
+                    game.game_over = True
                     game.next_turn()
                     if board.king_checked(game.next_player):
                         game.checkmate = True
@@ -180,6 +182,7 @@ class Main:
         game = self.game
         board = self.game.board
         dragger = self.game.dragger
+        ai_engine = self.game.ai_engine
 
         while True:
             # show methods
@@ -213,19 +216,69 @@ class Main:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # no need to collect moves data if the game is ended
                     if not game.game_over:
-                        self.player_click(event)
+                        # if player has to make a move
+                        if game.player[game.next_player]:
+                            self.player_click(event)
+                        else:
+
+                            # calculates valid moves for engine
+                            ai_engine.get_valid_moves(board, game.next_player)
+
+                            # gets best move, which is now just a random move
+                            move = ai_engine.get_best_move()
+                            initial = move.initial
+                            final = move.final
+                            piece = board.squares[initial.row][initial.col].piece
+                            # normal capture
+                            captured = board.squares[final.row][final.col].has_piece()
+                            # move piece
+                            changed_squares = board.move(piece, move, testing=False)
+                            # clear engine moves
+                            ai_engine.clear()
+                            # change move log
+                            game.changed_squares.append(changed_squares)
+                            game.moves.append(move)
+
+                            board.set_true_en_passant(piece)
+
+                            if board.check_promotion(piece, final):
+                                board.squares[final.row][final.col] = Queen(piece.color)
+
+                            # checkmate and stalemate
+                            if not board.moves_left(game.next_player):
+                                game.game_over = True
+                                game.next_turn()
+                                if board.king_checked(game.next_player):
+                                    game.checkmate = True
+                                else:
+                                    game.stalemate = True
+                                game.next_turn()
+                            else:
+                                game.checkmate = False
+                                game.stalemate = False
+
+                            # sounds
+                            game.play_sound(captured)
+                            # show methods
+                            game.show_all(screen, show_moves=False, show_hover=False)
+                            # next turn
+                            game.next_turn()
 
                 # mouse motion
                 elif event.type == pygame.MOUSEMOTION:
                     # no need to collect moves data if the game is ended
                     if not game.game_over:
-                        self.player_drag(event)
+                        # if player has to make a move
+                        if game.player[game.next_player]:
+                            self.player_drag(event)
 
                 # click release
                 elif event.type == pygame.MOUSEBUTTONUP:
                     # no need to collect moves data if the game is ended
                     if not game.game_over:
-                        self.player_release(event)
+                        # if player has to make a move
+                        if game.player[game.next_player]:
+                            self.player_release(event)
 
                 # key press
                 elif event.type == pygame.KEYDOWN:
@@ -245,11 +298,11 @@ class Main:
                             game.next_turn()
 
                     # changing themes
-                    if event.key == pygame.K_t:
+                    elif event.key == pygame.K_t:
                         game.change_theme()
 
                     # resets the game
-                    if event.key == pygame.K_r:
+                    elif event.key == pygame.K_r:
                         if not dragger.dragging:
                             game.reset()
                             game = self.game

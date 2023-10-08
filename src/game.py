@@ -7,6 +7,7 @@ from dragger import Dragger
 from config import Config
 from square import Square
 from piece import *
+from ai_chess import AI_engine
 
 
 class Game:
@@ -15,6 +16,7 @@ class Game:
         self.next_player = 'white'
         self.hovered_sqr = None
         self.board = Board()
+        self.ai_engine = AI_engine()
         self.dragger = Dragger()
         self.config = Config()
         self.promoting = False
@@ -28,6 +30,8 @@ class Game:
         self.stalemate = False
         # game over variable for clarity
         self.game_over = self.checkmate or self.stalemate
+        # game mode (PvP/PvE/CompVsComp)
+        self.player = {'white': True, 'black': True}
 
     # blit methods
     def show_all(self, surface, show_hover=True, show_moves=True, show_promotion=True):

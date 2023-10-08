@@ -32,7 +32,7 @@ class Game:
         # game over variable for clarity
         self.game_over = False
         # game mode (PvP/PvE/CompVsComp)
-        self.player = {'white': True, 'black': False}
+        self.player = {'white': True, 'black': True}
 
     # blit methods
     def show_all(self, surface, show_hover=True, show_moves=True, show_promotion=True):

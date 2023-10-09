@@ -22,6 +22,13 @@ class Board:
 
     # makes a move and remembers last move made
     def move(self, piece: Piece, move: Move, testing=False):
+        '''
+        Makes a move
+        :param piece: piece being moved
+        :param move: Move that is being done
+        :param testing:
+        :return: return all changed squares
+        '''
 
         changed_squares = []
 
@@ -79,21 +86,41 @@ class Board:
 
     # makes last move backwards
     def undo_move(self, fields):
+        '''
+        undoes last move
+        :param fields: get all changed fields and return their pieces back
+        :return: None
+        '''
         for field in fields:
             self.squares[field.row][field.col].piece = field.piece
 
     # checks if the move is valid or not
     def valid_move(self, piece: Piece, move: Move):
+        '''
+        :param piece: any piece
+        :param move: any move
+        :return: True if piece can do the move, else False
+        '''
         return move in piece.moves
 
     # checks if promotion is happening
     def check_promotion(self, piece: Piece, final: Square):
+        '''
+        :param piece: is a pawn
+        :param final: final square
+        :return: True if a pawn reaches promotion field else False
+        '''
         if isinstance(piece, Pawn):
             if final.row == 0 or final.row == 7:
                 return True
         return False
 
     def moves_left(self, color):
+        '''
+        checks if moves of pieces of a color left
+        :param color: black or white
+        :return: True if this color's pieces can move
+        '''
         for row in range(ROWS):
             for col in range(COLS):
                 if self.squares[row][col].has_enemy_piece(color):
@@ -106,6 +133,11 @@ class Board:
 
     # checks if castling is valid in self.move()
     def valid_castling(self, king_move: Move, piece: Piece):
+        '''
+        :param king_move: pieces, that king traveles
+        :param piece: king
+        :return: checks if a castling is valid
+        '''
         row = king_move.initial.row
         start = min(king_move.initial.col, king_move.final.col)
         end = max(king_move.initial.col, king_move.final.col)
@@ -132,6 +164,12 @@ class Board:
 
     # checks whether piece.color king is checked after a move, needed in calc_moves with checks
     def in_check(self, piece: Piece, move: Move):
+        '''
+
+        :param piece: any piece
+        :param move: any valid move
+        :return: if a king is in check after a move
+        '''
         temp_piece = copy.deepcopy(piece)
         temp_board = copy.deepcopy(self)
         temp_board.move(temp_piece, move, testing=True)
@@ -149,6 +187,11 @@ class Board:
 
     # checks if king is checked for mate or stalemate
     def king_checked(self, color):
+        '''
+        Used to check stalemate or checkmate
+        :param color: white or black
+        :return: True if king of given color is checked else False
+        '''
         for row in range(ROWS):
             for col in range(COLS):
                 if self.squares[row][col].has_enemy_piece(color):

@@ -19,40 +19,44 @@ class AI_engine:
 
     # shows the best move using a greedy algorithm for one move for now
     def get_best_move(self, board: Board, player_coefficient: int) -> Move:
-
         # score equals -inf
         score = -CHECKMATE_VALUE
-
         # initialize
         best_move = None
-
         # loop through possible moves
         for move in self.valid_moves:
-
             # copy a board to make a move there
             temp_board = copy.deepcopy(board)
-
             # initialize move
             initial = move.initial
-            final = move.final
             piece = temp_board.squares[initial.row][initial.col].piece
-
             # make a move
             temp_board.move(piece, move)
-            temp_score = 0
+            color = 'white' if player_coefficient < 0 else 'black'
 
-            if temp_board.checkmate:
-                temp_score = CHECKMATE_VALUE
+            temp_ai_engine = copy.deepcopy(self)
+            temp_ai_engine.clear()
+            temp_ai_engine.get_valid_moves(temp_board, color)
 
-            elif temp_board.stalemate:
-                temp_score = STALEMATE_VALUE
+            current_score = CHECKMATE_VALUE
 
-            else:
-                temp_score = temp_board.count_score() * player_coefficient
+            for m in temp_ai_engine.valid_moves:
+                # copy a board
+                opponent_temp_board = copy.deepcopy(temp_board)
 
-            # if temp_score is bigger than current score, we found better move
-            if temp_score > score:
-                score = temp_score
+                # initialize a move of an opponent
+                opponent_initial = m.initial
+                opponent_piece = opponent_temp_board.squares[opponent_initial.row][opponent_initial.col].piece
+
+                # opponent make a move
+                opponent_temp_board.move(opponent_piece, m)
+
+                color = 'black' if color == 'white' else 'white'
+
+                current_score = min(opponent_temp_board.count_score() * player_coefficient, current_score)
+
+            if current_score > score:
+                score = current_score
                 best_move = move
 
         return best_move

@@ -1,3 +1,4 @@
 # chess_game
-A study project, taken from https://github.com/AlejoG10 and https://www.youtube.com/@eddiesharick6649
-May be upgraded afterwards
+Chess interface with board in pieces. 
+Chess moves can be performed fully following game's logic. 
+
